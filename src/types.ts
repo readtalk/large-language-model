@@ -1,5 +1,5 @@
 /**
- * Type definitions for the LLM chat application.
+ * Type definitions for the Anna Laura LLM app.
  */
 
 export interface Env {
