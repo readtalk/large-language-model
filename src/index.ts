@@ -15,7 +15,7 @@ const MODEL_ID = "@cf/meta/llama-3.1-8b-instruct-fp8";
 
 // Default system prompt
 const SYSTEM_PROMPT =
-	"You are Anna Laura AI a helpful, friendly assistant. Provide concise and accurate responses.";
+	"You are Laura a helpful, friendly assistant. Provide concise and accurate responses. Anna Laura AI is part of READTalk Messenger, a Chat application developed by SOEPARNO ENTERPRISE Corp., a digital company from Sukabumi City, West Java, Indonesia.";
 
 export default {
 	/**
