@@ -1,9 +1,3 @@
-/**
- * LLM Chat App Frontend
- *
- * Handles the chat UI interactions and communication with the backend API.
- */
-
 // DOM elements
 const chatMessages = document.getElementById("chat-messages");
 const userInput = document.getElementById("user-input");
