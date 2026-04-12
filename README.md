@@ -1,4 +1,4 @@
-# Anna Laura AI LLM App
+# Large Language Model App
 
 This template demonstrates how to build an Anna Laura AI-powered chat interface using Cloudflare Workers AI with streaming responses. It features:
 
