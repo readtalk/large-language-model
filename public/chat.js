@@ -15,7 +15,7 @@ let chatHistory = [
 	{
 		role: "assistant",
 		content:
-			"Hello! I'm Anna Laura AI an READTalk AI LLM powered by SOEPARNO ENTERPRISE Corp. How can I help you today?",
+			"Hello! I'm Anna Laura AI an virtual assistant for everyone. How can I help you today?",
 	},
 ];
 let isProcessing = false;
