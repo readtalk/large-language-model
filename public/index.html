@@ -297,8 +297,8 @@
 </head>
 <body>
     <header>
-        <h1>💬 Anna Laura AI</h1>
-        <p>Your friendly AI assistant</p>
+        <h1>READTalk</h1>
+        <p>Anna Laura AI</p>
     </header>
 
     <div class="chat-container">
@@ -314,7 +314,7 @@
 
         <div class="message-input">
             <div class="input-wrapper">
-                <button id="emoji-button" title="Add emoji">😊</button>
+                <button id="emoji-button" title="Add emoji">🎭</button>
                 <textarea id="user-input" placeholder="Type your message..." rows="1" autofocus></textarea>
             </div>
             <button id="send-button">➤</button>
@@ -371,7 +371,7 @@
     </div>
 
     <footer>
-        <p>Add emojis to express yourself! 🎭</p>
+        <p>your friendly assistance</p>
     </footer>
 
     <script>
@@ -484,14 +484,14 @@
                             const code = btn.getAttribute('data-code');
                             navigator.clipboard.writeText(code).then(() => {
                                 const originalText = btn.textContent;
-                                btn.textContent = '✅ Copied!';
+                                btn.textContent = '✔️ Copied!';
                                 setTimeout(() => {
                                     btn.textContent = originalText;
                                 }, 2000);
                             }).catch(() => {
                                 btn.textContent = '❌ Failed';
                                 setTimeout(() => {
-                                    btn.textContent = '📋 Copy';
+                                    btn.textContent = '📂 Copy';
                                 }, 2000);
                             });
                         });
@@ -549,7 +549,7 @@
                             const code = btn.getAttribute('data-code');
                             navigator.clipboard.writeText(code).then(() => {
                                 const originalText = btn.textContent;
-                                btn.textContent = '✅ Copied!';
+                                btn.textContent = '✔️ Copied!';
                                 setTimeout(() => {
                                     btn.textContent = originalText;
                                 }, 2000);
