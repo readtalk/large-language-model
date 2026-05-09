@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />		
-    <title>READTalk - Anna Laura AI</title>
+    <title>READTalk</title>
     <style>
         :root {
             --primary-color: #000000;
@@ -320,19 +320,19 @@
         <div id="chat-messages" class="chat-messages">
             <div class="message assistant-message">
                 <div class="message-content">
-                    <p>Hello! I'm Anna Laura AI, a virtual assistant for everyone. How can I help you today? 😊</p>
+                    <p>Hello! I'm Laura, a virtual assistant for you. How can I help you today? 😊</p>
                 </div>
             </div>
         </div>
 
         <div class="typing-indicator" id="typing-indicator">
-            ✨ Anna is thinking...
+            🧠 Laura is thinking...
         </div>
 
         <div class="message-input">
             <div class="input-wrapper">
-                <button id="emoji-button" title="Add emoji">😊</button>
-                <textarea id="user-input" placeholder="Type your message..." rows="1" autofocus></textarea>
+                <button id="emoji-button" title="Add emoji">🙂</button>
+                <textarea id="user-input" placeholder="Message..." rows="1" autofocus></textarea>
             </div>
             <button id="send-button">➤</button>
         </div>
@@ -402,7 +402,7 @@
         let chatHistory = [
             {
                 role: "assistant",
-                content: "Hello! I'm Anna Laura AI, a virtual assistant for everyone. How can I help you today? 😊",
+                content: "Hello! I'm Laura, a virtual assistant for you. How can I help you today? 😊",
             },
         ];
         let isProcessing = false;
@@ -466,7 +466,7 @@
                     <div class="code-block">
                         <div class="code-header">
                             <span>${escapeHtml(lang)}</span>
-                            <button class="copy-code-btn" data-code="${escapeHtml(cleanCode).replace(/"/g, '&quot;')}">📋 Copy</button>
+                            <button class="copy-code-btn" data-code="${escapeHtml(cleanCode).replace(/"/g, '&quot;')}">📂 Copy</button>
                         </div>
                         <pre><code>${escapeHtml(cleanCode)}</code></pre>
                     </div>
@@ -509,14 +509,14 @@
                     const code = btn.getAttribute('data-code');
                     navigator.clipboard.writeText(code).then(() => {
                         const originalText = btn.textContent;
-                        btn.textContent = '✅ Copied!';
+                        btn.textContent = '✔️ Copied!';
                         setTimeout(() => {
                             btn.textContent = originalText;
                         }, 2000);
                     }).catch(() => {
                         btn.textContent = '❌ Failed';
                         setTimeout(() => {
-                            btn.textContent = '📋 Copy';
+                            btn.textContent = '📂 Copy';
                         }, 2000);
                     });
                 };
@@ -616,7 +616,7 @@
                 }
             } catch (error) {
                 console.error("Error:", error);
-                addMessageToChat("assistant", "Sorry, there was an error processing your request. 😅");
+                addMessageToChat("assistant", "Sorry, there was an error processing your request. 😓");
             } finally {
                 typingIndicator.classList.remove("visible");
                 isProcessing = false;
