@@ -10,7 +10,7 @@ const emojiPicker = document.getElementById("emoji-picker");
 let chatHistory = [
     {
         role: "assistant",
-        content: "Hello! I'm Laura, a virtual assistant for you. How can I help you today? 🙂",
+        content: "Hello! I'm Ann Laura AI, a virtual assistant for you. How can I help you today? 🙂",
     },
 ];
 let isProcessing = false;
