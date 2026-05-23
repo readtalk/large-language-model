@@ -89,7 +89,7 @@ function renderMarkdown(text) {
             <div class="code-block">
                 <div class="code-header">
                     <span class="code-lang">${escapeHtml(lang)}</span>
-                    <button class="copy-code-btn" data-code="${escapeHtml(code).replace(/"/g, '&quot;')}">📋 Copy</button>
+                    <button class="copy-code-btn" data-code="${escapeHtml(code).replace(/"/g, '&quot;')}">📁 Copy</button>
                 </div>
                 <pre><code>${escapeHtml(code)}</code></pre>
             </div>
@@ -129,14 +129,14 @@ function attachCopyListeners(container) {
             const code = btn.getAttribute('data-code');
             navigator.clipboard.writeText(code).then(() => {
                 const originalText = btn.textContent;
-                btn.textContent = '✅ Copied!';
+                btn.textContent = '✔️ Copied!';
                 setTimeout(() => {
                     btn.textContent = originalText;
                 }, 2000);
             }).catch(() => {
                 btn.textContent = '❌ Failed';
                 setTimeout(() => {
-                    btn.textContent = '📋 Copy';
+                    btn.textContent = '📁 Copy';
                 }, 2000);
             });
         };
