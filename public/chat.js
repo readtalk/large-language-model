@@ -17,34 +17,34 @@ let chatHistory = [
 
 let isProcessing = false;
 
-// ==================== AUTO RESIZE TEXTAREA ====================
-function autoResizeTextarea() {
-    userInput.style.height = "auto";
+// ==================== AUTO-RESIZE TEXTAREA ====================
+userInput.addEventListener("input", function () {
+    this.style.height = "auto";
 
-    const newHeight = Math.min(userInput.scrollHeight, 140);
+    let newHeight = Math.min(this.scrollHeight, 120);
 
-    userInput.style.height = newHeight + "px";
-    userInput.style.overflowY =
-        userInput.scrollHeight > 140 ? "auto" : "hidden";
-}
+    this.style.height = newHeight + "px";
 
-userInput.addEventListener("input", autoResizeTextarea);
+    this.style.overflowY =
+        this.scrollHeight > 120 ? "auto" : "hidden";
+});
 
 // ==================== SEND ON ENTER ====================
-userInput.addEventListener("keydown", (e) => {
+userInput.addEventListener("keydown", function (e) {
     if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         sendMessage();
     }
 });
 
-// ==================== SEND BUTTON ====================
+// ==================== SEND BUTTON CLICK ====================
 sendButton.addEventListener("click", sendMessage);
 
 // ==================== EMOJI PICKER ====================
 if (emojiButton && emojiPicker) {
     emojiButton.addEventListener("click", (e) => {
         e.stopPropagation();
+
         emojiPicker.classList.toggle("show");
     });
 
@@ -61,31 +61,37 @@ if (emojiButton && emojiPicker) {
         emoji.addEventListener("click", () => {
             const emojiChar = emoji.textContent;
 
-            const start = userInput.selectionStart;
-            const end = userInput.selectionEnd;
+            const cursorPos = userInput.selectionStart;
 
-            const before = userInput.value.substring(0, start);
-            const after = userInput.value.substring(end);
+            const textBefore =
+                userInput.value.substring(0, cursorPos);
 
-            userInput.value = before + emojiChar + after;
+            const textAfter =
+                userInput.value.substring(cursorPos);
+
+            userInput.value =
+                textBefore + emojiChar + textAfter;
 
             userInput.focus();
 
-            const cursor = start + emojiChar.length;
+            userInput.dispatchEvent(new Event("input"));
 
-            userInput.setSelectionRange(cursor, cursor);
-
-            autoResizeTextarea();
+            userInput.setSelectionRange(
+                cursorPos + emojiChar.length,
+                cursorPos + emojiChar.length
+            );
 
             emojiPicker.classList.remove("show");
         });
     });
 }
 
-// ==================== ESCAPE HTML ====================
+// ==================== XSS PROTECTION ====================
 function escapeHtml(text) {
     const div = document.createElement("div");
+
     div.textContent = text;
+
     return div.innerHTML;
 }
 
@@ -93,44 +99,56 @@ function escapeHtml(text) {
 function renderMarkdown(text) {
     let html = escapeHtml(text);
 
-    // ==================== CODE BLOCK ====================
+    // ==================== BLOCK CODE ====================
     html = html.replace(
         /```(\w*)\n([\s\S]*?)```/g,
         (match, language, code) => {
             const lang = language || "plain";
+
             const cleanCode = code.trim();
 
             return `
-                <div class="code-block">
-                    <div class="code-header">
-                        <span class="code-lang">${escapeHtml(lang)}</span>
+<div class="code-block">
+    <div class="code-header">
+        <span class="code-lang">${escapeHtml(lang)}</span>
 
-                        <button
-                            class="copy-code-btn"
-                            data-code="${escapeHtml(cleanCode).replace(/"/g, "&quot;")}"
-                        >
-                            📂 Copy
-                        </button>
-                    </div>
+        <button
+            class="copy-code-btn"
+            data-code="${escapeHtml(cleanCode).replace(/"/g, "&quot;")}"
+        >
+            📂 Copy
+        </button>
+    </div>
 
-                    <pre><code>${escapeHtml(cleanCode)}</code></pre>
-                </div>
-            `;
+    <pre><code>${escapeHtml(cleanCode)}</code></pre>
+</div>
+`;
         }
     );
 
     // ==================== INLINE CODE ====================
     html = html.replace(
-        /`([^`]+)`/g,
+        /`([^`\n]+)`/g,
         '<code class="inline-code">$1</code>'
     );
 
     // ==================== HEADINGS ====================
-    html = html.replace(/^### (.*)$/gm, "<h3>$1</h3>");
-    html = html.replace(/^## (.*)$/gm, "<h2>$1</h2>");
-    html = html.replace(/^# (.*)$/gm, "<h1>$1</h1>");
+    html = html.replace(
+        /^### (.*$)/gm,
+        "<h3>$1</h3>"
+    );
 
-    // ==================== BOLD ====================
+    html = html.replace(
+        /^## (.*$)/gm,
+        "<h2>$1</h2>"
+    );
+
+    html = html.replace(
+        /^# (.*$)/gm,
+        "<h1>$1</h1>"
+    );
+
+    // ==================== BOLD + ITALIC ====================
     html = html.replace(
         /\*\*\*(.*?)\*\*\*/g,
         "<strong><em>$1</em></strong>"
@@ -154,134 +172,153 @@ function renderMarkdown(text) {
 
     // ==================== UNORDERED LIST ====================
     html = html.replace(
-        /^\- (.*)$/gm,
-        "<li>$1</li>"
+        /(?:^|\n)- (.*(?:\n- .*)*)/g,
+        (match) => {
+            const items = match
+                .trim()
+                .split("\n")
+                .map((line) =>
+                    `<li>${line.replace(/^- /, "")}</li>`
+                )
+                .join("");
+
+            return `<ul>${items}</ul>`;
+        }
     );
 
+    // ==================== ORDERED LIST ====================
     html = html.replace(
-        /(<li>.*<\/li>)/gs,
-        "<ul>$1</ul>"
+        /(?:^|\n)\d+\. (.*(?:\n\d+\. .*)*)/g,
+        (match) => {
+            const items = match
+                .trim()
+                .split("\n")
+                .map((line) =>
+                    `<li>${line.replace(/^\d+\. /, "")}</li>`
+                )
+                .join("");
+
+            return `<ol>${items}</ol>`;
+        }
     );
 
-    // ==================== PARAGRAPH HANDLER ====================
-    html = html
-        .split(/\n{2,}/)
-        .map((block) => {
-            const trimmed = block.trim();
-
-            if (!trimmed) return "";
-
-            if (
-                trimmed.startsWith("<div") ||
-                trimmed.startsWith("<ul") ||
-                trimmed.startsWith("<pre") ||
-                trimmed.startsWith("<h1") ||
-                trimmed.startsWith("<h2") ||
-                trimmed.startsWith("<h3") ||
-                trimmed.startsWith("<blockquote")
-            ) {
-                return trimmed;
-            }
-
-            return `<p>${trimmed.replace(/\n/g, "<br>")}</p>`;
-        })
-        .join("");
+    // ==================== LINE BREAK ====================
+    html = html.replace(/\n/g, "<br>");
 
     return html;
 }
 
 // ==================== COPY CODE BUTTON ====================
 function attachCopyListeners(container) {
-    container.querySelectorAll(".copy-code-btn").forEach((btn) => {
-        btn.onclick = async () => {
-            const code = btn.getAttribute("data-code");
+    container
+        .querySelectorAll(".copy-code-btn")
+        .forEach((btn) => {
+            btn.removeEventListener(
+                "click",
+                btn._listener
+            );
 
-            try {
-                await navigator.clipboard.writeText(code);
+            const listener = () => {
+                const code =
+                    btn.getAttribute("data-code");
 
-                const oldText = btn.textContent;
+                navigator.clipboard
+                    .writeText(code)
+                    .then(() => {
+                        const originalText =
+                            btn.textContent;
 
-                btn.textContent = "✔️ Copied!";
+                        btn.textContent =
+                            "✔️ Copied!";
 
-                setTimeout(() => {
-                    btn.textContent = oldText;
-                }, 2000);
-            } catch (err) {
-                btn.textContent = "❌ Failed";
+                        setTimeout(() => {
+                            btn.textContent =
+                                originalText;
+                        }, 2000);
+                    })
+                    .catch(() => {
+                        btn.textContent =
+                            "❌ Failed";
 
-                setTimeout(() => {
-                    btn.textContent = "📂 Copy";
-                }, 2000);
-            }
-        };
-    });
+                        setTimeout(() => {
+                            btn.textContent =
+                                "📂 Copy";
+                        }, 2000);
+                    });
+            };
+
+            btn.addEventListener(
+                "click",
+                listener
+            );
+
+            btn._listener = listener;
+        });
 }
 
-// ==================== SCROLL TO BOTTOM ====================
-function scrollToBottom() {
-    requestAnimationFrame(() => {
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-    });
-}
-
-// ==================== ADD MESSAGE ====================
+// ==================== ADD MESSAGE TO CHAT ====================
 function addMessageToChat(role, content) {
-    const messageEl = document.createElement("div");
+    const messageEl =
+        document.createElement("div");
 
-    messageEl.className = `message ${role}-message`;
+    messageEl.className =
+        `message ${role}-message`;
 
     if (role === "assistant") {
-        const htmlContent = renderMarkdown(content);
+        const htmlContent =
+            renderMarkdown(content);
 
         messageEl.innerHTML = `
-            <div class="message-content">
-                ${htmlContent}
-            </div>
-        `;
+<div class="message-content">
+    ${htmlContent}
+</div>
+`;
 
         attachCopyListeners(messageEl);
     } else {
         messageEl.innerHTML = `
-            <div class="message-content">
-                <p>${escapeHtml(content)}</p>
-            </div>
-        `;
+<div class="message-content">
+    <p>${escapeHtml(content)}</p>
+</div>
+`;
     }
 
     chatMessages.appendChild(messageEl);
 
-    scrollToBottom();
-
-    return messageEl;
+    chatMessages.scrollTop =
+        chatMessages.scrollHeight;
 }
 
-// ==================== SEND MESSAGE ====================
+// ==================== SEND MESSAGE TO API ====================
 async function sendMessage() {
     const message = userInput.value.trim();
 
-    if (!message || isProcessing) {
+    if (message === "" || isProcessing) {
         return;
     }
 
     isProcessing = true;
 
     userInput.disabled = true;
+
     sendButton.disabled = true;
 
     addMessageToChat("user", message);
+
+    userInput.value = "";
+
+    userInput.style.height = "auto";
+
+    typingIndicator.classList.add("visible");
 
     chatHistory.push({
         role: "user",
         content: message,
     });
 
-    userInput.value = "";
-    userInput.style.height = "auto";
-
-    typingIndicator.classList.add("visible");
-
     try {
-        const assistantMessageEl = document.createElement("div");
+        const assistantMessageEl =
+            document.createElement("div");
 
         assistantMessageEl.className =
             "message assistant-message";
@@ -289,30 +326,45 @@ async function sendMessage() {
         assistantMessageEl.innerHTML =
             '<div class="message-content"></div>';
 
-        chatMessages.appendChild(assistantMessageEl);
+        chatMessages.appendChild(
+            assistantMessageEl
+        );
 
         const assistantContentDiv =
-            assistantMessageEl.querySelector(".message-content");
+            assistantMessageEl.querySelector(
+                ".message-content"
+            );
 
-        scrollToBottom();
+        chatMessages.scrollTop =
+            chatMessages.scrollHeight;
 
-        const response = await fetch("/api/chat", {
-            method: "POST",
+        const response = await fetch(
+            "/api/chat",
+            {
+                method: "POST",
 
-            headers: {
-                "Content-Type": "application/json",
-            },
+                headers: {
+                    "Content-Type":
+                        "application/json",
+                },
 
-            body: JSON.stringify({
-                messages: chatHistory,
-            }),
-        });
+                body: JSON.stringify({
+                    messages: chatHistory,
+                }),
+            }
+        );
 
-        if (!response.ok || !response.body) {
-            throw new Error("Failed to get response");
+        if (
+            !response.ok ||
+            !response.body
+        ) {
+            throw new Error(
+                "Failed to get response"
+            );
         }
 
-        const reader = response.body.getReader();
+        const reader =
+            response.body.getReader();
 
         const decoder = new TextDecoder();
 
@@ -321,12 +373,18 @@ async function sendMessage() {
         let buffer = "";
 
         const flushText = () => {
-            assistantContentDiv.innerHTML =
+            const htmlContent =
                 renderMarkdown(responseText);
 
-            attachCopyListeners(assistantMessageEl);
+            assistantContentDiv.innerHTML =
+                htmlContent;
 
-            scrollToBottom();
+            attachCopyListeners(
+                assistantMessageEl
+            );
+
+            chatMessages.scrollTop =
+                chatMessages.scrollHeight;
         };
 
         while (true) {
@@ -335,11 +393,15 @@ async function sendMessage() {
 
             if (done) break;
 
-            buffer += decoder.decode(value, {
-                stream: true,
-            });
+            buffer += decoder.decode(
+                value,
+                {
+                    stream: true,
+                }
+            );
 
-            const parsed = consumeSseEvents(buffer);
+            const parsed =
+                consumeSseEvents(buffer);
 
             buffer = parsed.buffer;
 
@@ -349,19 +411,25 @@ async function sendMessage() {
                 }
 
                 try {
-                    const jsonData = JSON.parse(data);
+                    const jsonData =
+                        JSON.parse(data);
 
                     let content = "";
 
                     if (
-                        typeof jsonData.response === "string"
-                    ) {
-                        content = jsonData.response;
-                    } else if (
-                        jsonData.choices?.[0]?.delta?.content
+                        typeof jsonData.response ===
+                            "string" &&
+                        jsonData.response.length > 0
                     ) {
                         content =
-                            jsonData.choices[0].delta.content;
+                            jsonData.response;
+                    } else if (
+                        jsonData.choices?.[0]
+                            ?.delta?.content
+                    ) {
+                        content =
+                            jsonData.choices[0]
+                                .delta.content;
                     }
 
                     if (content) {
@@ -369,75 +437,94 @@ async function sendMessage() {
 
                         flushText();
                     }
-                } catch (err) {
+                } catch (e) {
                     console.error(
-                        "SSE parse error:",
-                        err
+                        "Parse error:",
+                        e
                     );
                 }
             }
         }
 
-        if (responseText.trim()) {
+        if (responseText.length > 0) {
             chatHistory.push({
                 role: "assistant",
                 content: responseText,
             });
         }
     } catch (error) {
-        console.error("Chat error:", error);
+        console.error("Error:", error);
 
         addMessageToChat(
             "assistant",
             "Sorry, there was an error processing your request. 😓"
         );
     } finally {
-        typingIndicator.classList.remove("visible");
+        typingIndicator.classList.remove(
+            "visible"
+        );
 
         isProcessing = false;
 
         userInput.disabled = false;
+
         sendButton.disabled = false;
 
         userInput.focus();
     }
 }
 
-// ==================== SSE PARSER ====================
+// ==================== SSE EVENT PARSER ====================
 function consumeSseEvents(buffer) {
-    let normalized = buffer.replace(/\r/g, "");
+    let normalized =
+        buffer.replace(/\r/g, "");
 
     const events = [];
 
     let eventEndIndex;
 
     while (
-        (eventEndIndex = normalized.indexOf("\n\n")) !== -1
+        (
+            eventEndIndex =
+                normalized.indexOf("\n\n")
+        ) !== -1
     ) {
-        const rawEvent = normalized.slice(
-            0,
-            eventEndIndex
-        );
+        const rawEvent =
+            normalized.slice(
+                0,
+                eventEndIndex
+            );
 
         normalized = normalized.slice(
             eventEndIndex + 2
         );
 
-        const lines = rawEvent.split("\n");
+        const lines =
+            rawEvent.split("\n");
 
         const dataLines = [];
 
         for (const line of lines) {
-            if (line.startsWith("data:")) {
+            if (
+                line.startsWith("data:")
+            ) {
                 dataLines.push(
-                    line.slice("data:".length).trimStart()
+                    line
+                        .slice(
+                            "data:".length
+                        )
+                        .trimStart()
                 );
             }
         }
 
-        if (dataLines.length > 0) {
-            events.push(dataLines.join("\n"));
+        if (dataLines.length === 0) {
+            continue;
         }
+
+        events.push(
+            dataLines.join("\n")
+        );
     }
 
     return {
@@ -445,6 +532,3 @@ function consumeSseEvents(buffer) {
         buffer: normalized,
     };
 }
-
-// ==================== INITIAL SCROLL ====================
-scrollToBottom();
