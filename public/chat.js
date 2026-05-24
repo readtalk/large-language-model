@@ -117,11 +117,14 @@ function renderMarkdown(text) {
 
         <button
             class="copy-code-btn"
-            data-code="${escapeHtml(cleanCode).replace(/"/g, "&quot;")}"
+            data-code="${cleanCode.replace(/"/g, "&quot;")}"
         >
             📂 Copy
         </button>
     </div>
+
+    <pre><code>${cleanCode}</code></pre>
+</div>
 
     <pre><code>${escapeHtml(cleanCode)}</code></pre>
 </div>`;
