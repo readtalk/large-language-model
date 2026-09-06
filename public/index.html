@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>READTalk - Chat</title>
+    <style>
+        /* ============================================================
+           RESET & VARIABEL
+           ============================================================ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --sidebar-width: 35%;
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-surface: #ffffff;
+            --bg-chat: #f1f5f9;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-body: #1e293b;
+            --border-color: #334155;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --user-msg-bg: #dbeafe;
+            --assistant-msg-bg: #ffffff;
+            --radius: 16px;
+        }
+
+        html,
+        body {
+            height: 100%;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-body);
+        }
+
+        /* ============================================================
+           LAYOUT UTAMA
+           ============================================================ */
+        .app {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+        }
+
+        /* ============================================================
+           SIDEBAR
+           ============================================================ */
+        .sidebar {
+            width: var(--sidebar-width);
+            min-width: var(--sidebar-width);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--border-color);
+            flex-shrink: 0;
+            overflow: hidden;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* ===== SIDEBAR HEADER ===== */
+        .sidebar-header {
+            padding: 20px 16px 16px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .sidebar-header h2 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .sidebar-header h2 span {
+            background: var(--accent);
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 0.6rem;
+            font-weight: 600;
+            color: white;
+        }
+
+        .btn-new-chat {
+            background: var(--accent);
+            border: none;
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            font-size: 1.4rem;
+            font-weight: 300;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .btn-new-chat:hover {
+            background: var(--accent-hover);
+        }
+
+        /* ===== DAFTAR CHAT ===== */
+        .chat-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px 12px;
+        }
+
+        .chat-list::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .chat-list::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 999px;
+        }
+
+        .chat-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.15s ease;
+            margin-bottom: 2px;
+        }
+
+        .chat-item:hover {
+            background: var(--bg-secondary);
+        }
+
+        .chat-item.active {
+            background: var(--bg-secondary);
+        }
+
+        .chat-item .chat-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .chat-item .chat-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .chat-item .chat-name {
+            font-weight: 500;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .chat-item .chat-preview {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .chat-item .chat-time {
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            flex-shrink: 0;
+        }
+
+        /* ===== SIDEBAR FOOTER ===== */
+        .sidebar-footer {
+            padding: 12px 16px;
+            border-top: 1px solid var(--border-color);
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            flex-shrink: 0;
+        }
+
+        /* ============================================================
+           CHAT UTAMA
+           ============================================================ */
+        .main-chat {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-chat);
+            min-width: 0;
+            position: relative;
+        }
+
+        /* ===== HEADER CHAT ===== */
+        .chat-header {
+            padding: 12px 20px;
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+
+        /* Tombol kembali (hanya di HP) */
+        .btn-back {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.6rem;
+            cursor: pointer;
+            padding: 4px 4px 4px 0;
+            color: #1f2937;
+            line-height: 1;
+        }
+
+        .btn-back:hover {
+            color: #000;
+        }
+
+        .chat-header .chat-avatar-small {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .chat-header .chat-title {
+            flex: 1;
+        }
+
+        .chat-header .chat-title h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin: 0;
+            line-height: 1.2;
+        }
+
+        .chat-header .chat-title p {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #22c55e;
+            border-radius: 50%;
+            animation: pulse-dot 2s infinite;
+        }
+
+        @keyframes pulse-dot {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.4;
+            }
+        }
+
+        /* ===== CHAT MESSAGES ===== */
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .chat-messages::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 999px;
+        }
+
+        .message {
+            max-width: 75%;
+            padding: 10px 14px;
+            border-radius: 16px;
+            animation: fadeIn 0.2s ease;
+            word-wrap: break-word;
+        }
+
+        .message.assistant {
+            background: var(--assistant-msg-bg);
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+        }
+
+        .message.user {
+            background: var(--user-msg-bg);
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message .msg-time {
+            font-size: 0.6rem;
+            color: #9ca3af;
+            margin-top: 4px;
+            text-align: right;
+            user-select: none;
+        }
+
+        .assistant .msg-time {
+            text-align: left;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ===== TYPING INDICATOR ===== */
+        .typing-indicator {
+            padding: 6px 16px 12px;
+            font-size: 0.85rem;
+            color: #6b7280;
+            font-style: italic;
+            display: none;
+        }
+
+        .typing-indicator.visible {
+            display: block;
+        }
+
+        /* ===== INPUT AREA ===== */
+        .input-area {
+            padding: 12px 16px 16px;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .input-wrapper {
+            flex: 1;
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+            padding: 6px 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 24px;
+            background: #f8fafc;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .input-wrapper:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        #emoji-btn {
+            background: none;
+            border: none;
+            font-size: 1.3rem;
+            cursor: pointer;
+            padding: 4px;
+            line-height: 1;
+        }
+
+        #user-input {
+            flex: 1;
+            border: none;
+            outline: none;
+            resize: none;
+            background: transparent;
+            font-size: 0.95rem;
+            font-family: inherit;
+            line-height: 1.5;
+            max-height: 120px;
+            overflow-y: auto;
+            padding: 4px 0;
+        }
+
+        #send-btn {
+            width: 44px;
+            height: 44px;
+            border: none;
+            border-radius: 50%;
+            background: var(--accent);
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: background 0.2s ease, transform 0.15s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        #send-btn:hover {
+            background: var(--accent-hover);
+        }
+
+        #send-btn:active {
+            transform: scale(0.95);
+        }
+
+        #send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* ===== EMOJI PICKER ===== */
+        .emoji-picker {
+            position: absolute;
+            bottom: 80px;
+            right: 16px;
+            background: white;
+            border-radius: 16px;
+            padding: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+            border: 1px solid #e5e7eb;
+            display: none;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 4px;
+            max-width: 320px;
+            z-index: 50;
+        }
+
+        .emoji-picker.show {
+            display: grid;
+        }
+
+        .emoji-picker .emoji-item {
+            padding: 4px;
+            text-align: center;
+            font-size: 1.3rem;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: background 0.15s ease;
+        }
+
+        .emoji-picker .emoji-item:hover {
+            background: #f1f5f9;
+        }
+
+        /* ============================================================
+           TOMBOL + (Floating Action Button) - KHUSUS HP
+           ============================================================ */
+        .fab-new-chat {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 56px;
+            height: 56px;
+            border: none;
+            border-radius: 50%;
+            background: var(--accent);
+            color: white;
+            font-size: 2rem;
+            font-weight: 300;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4);
+            transition: all 0.2s ease;
+            z-index: 50;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .fab-new-chat:hover {
+            background: var(--accent-hover);
+            transform: scale(1.05);
+        }
+
+        .fab-new-chat:active {
+            transform: scale(0.95);
+        }
+
+        /* ============================================================
+           RESPONSIVE
+           ============================================================ */
+
+        /* ===== HP: SIDEBAR & CHAT BERGANTIAN (FULLSCREEN) ===== */
+        @media (max-width: 768px) {
+            /* Sidebar fullscreen */
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100%;
+                width: 100vw;
+                border-right: none;
+                transform: translateX(0);
+                z-index: 100;
+                border-radius: 0;
+            }
+
+            /* Chat fullscreen (di atas sidebar) */
+            .main-chat {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100%;
+                width: 100vw;
+                z-index: 50;
+                background: var(--bg-chat);
+                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+
+            /* Saat chat terbuka, sidebar sembunyi di belakang */
+            .main-chat.open {
+                transform: translateX(0);
+            }
+
+            .main-chat.closed {
+                transform: translateX(100%);
+            }
+
+            /* Sidebar tertutup (disembunyikan) saat chat terbuka */
+            .sidebar.hidden {
+                transform: translateX(-100%);
+            }
+
+            /* Tampilkan tombol kembali di HP */
+            .btn-back {
+                display: block;
+            }
+
+            /* Tampilkan FAB + di HP */
+            .fab-new-chat {
+                display: flex;
+            }
+
+            /* Header chat lebih ringkas */
+            .chat-header {
+                padding: 10px 14px;
+            }
+
+            .chat-header .chat-avatar-small {
+                width: 34px;
+                height: 34px;
+                font-size: 0.9rem;
+            }
+
+            .chat-header .chat-title h3 {
+                font-size: 0.9rem;
+            }
+
+            .message {
+                max-width: 85%;
+                padding: 8px 12px;
+                font-size: 0.9rem;
+            }
+
+            .chat-messages {
+                padding: 12px 14px;
+            }
+
+            .input-area {
+                padding: 8px 12px 12px;
+            }
+
+            #send-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 1rem;
+            }
+
+            .input-wrapper {
+                padding: 4px 10px;
+            }
+
+            .emoji-picker {
+                right: 8px;
+                max-width: 280px;
+                grid-template-columns: repeat(7, 1fr);
+            }
+
+            .chat-item {
+                padding: 12px 14px;
+            }
+
+            .chat-item .chat-avatar {
+                width: 44px;
+                height: 44px;
+                font-size: 1rem;
+            }
+
+            .chat-item .chat-name {
+                font-size: 1rem;
+            }
+
+            .chat-item .chat-preview {
+                font-size: 0.8rem;
+            }
+
+            .fab-new-chat {
+                width: 48px;
+                height: 48px;
+                font-size: 1.6rem;
+                bottom: 20px;
+                right: 20px;
+            }
+        }
+
+        /* HP KECIL */
+        @media (max-width: 480px) {
+            .chat-header {
+                padding: 8px 10px;
+            }
+
+            .chat-header .chat-title h3 {
+                font-size: 0.85rem;
+            }
+
+            .chat-header .chat-title p {
+                font-size: 0.65rem;
+            }
+
+            .message {
+                max-width: 90%;
+                font-size: 0.85rem;
+                padding: 8px 10px;
+            }
+
+            .emoji-picker {
+                max-width: 240px;
+                grid-template-columns: repeat(6, 1fr);
+                padding: 8px;
+                bottom: 72px;
+            }
+
+            .emoji-picker .emoji-item {
+                font-size: 1.1rem;
+                padding: 2px;
+            }
+
+            .sidebar-header h2 {
+                font-size: 1rem;
+            }
+
+            .btn-back {
+                font-size: 1.4rem;
+            }
+
+            .fab-new-chat {
+                width: 44px;
+                height: 44px;
+                font-size: 1.4rem;
+                bottom: 16px;
+                right: 16px;
+            }
+        }
+
+        /* ===== DESKTOP: SIDEBAR 35% + CHAT 65% ===== */
+        @media (min-width: 769px) {
+            .sidebar {
+                position: relative;
+                width: 35%;
+                height: 100%;
+                transform: translateX(0) !important;
+            }
+
+            .main-chat {
+                position: relative;
+                width: 65%;
+                transform: translateX(0) !important;
+            }
+
+            .btn-back {
+                display: none !important;
+            }
+
+            .fab-new-chat {
+                display: none !important;
+            }
+
+            .sidebar.hidden {
+                transform: translateX(0) !important;
+            }
+
+            .main-chat.closed {
+                transform: translateX(0) !important;
+            }
+        }
+
+        /* TABLET */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .sidebar {
+                width: 32%;
+            }
+            .main-chat {
+                width: 68%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ============================================================
+    APP
+    ============================================================ -->
+    <div class="app">
+
+        <!-- ============================================================
+        SIDEBAR
+        ============================================================ -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2>
+                    💬 READTalk
+                    <span>v1</span>
+                </h2>
+                <button class="btn-new-chat" id="newChatBtn" title="Chat Baru">+</button>
+            </div>
+
+            <div class="chat-list" id="chatList">
+                <div class="chat-item active" data-chat="laura">
+                    <div class="chat-avatar">L</div>
+                    <div class="chat-info">
+                        <div class="chat-name">Anna Laura AI</div>
+                        <div class="chat-preview">Halo, saya Laura...</div>
+                    </div>
+                    <div class="chat-time">14:30</div>
+                </div>
+
+                <div class="chat-item" data-chat="proyek">
+                    <div class="chat-avatar" style="background:#8b5cf6;">D</div>
+                    <div class="chat-info">
+                        <div class="chat-name">Diskusi Proyek</div>
+                        <div class="chat-preview">Oke, kita lanjutkan besok...</div>
+                    </div>
+                    <div class="chat-time">Kemarin</div>
+                </div>
+
+                <div class="chat-item" data-chat="dev">
+                    <div class="chat-avatar" style="background:#ef4444;">T</div>
+                    <div class="chat-info">
+                        <div class="chat-name">Tim Developer</div>
+                        <div class="chat-preview">Sudah di-deploy ke production...</div>
+                    </div>
+                    <div class="chat-time">2 hari</div>
+                </div>
+
+                <div class="chat-item" data-chat="review">
+                    <div class="chat-avatar" style="background:#f59e0b;">R</div>
+                    <div class="chat-info">
+                        <div class="chat-name">Review UI</div>
+                        <div class="chat-preview">Bagus, tinggal perbaiki sidebar...</div>
+                    </div>
+                    <div class="chat-time">3 hari</div>
+                </div>
+
+                <div class="chat-item" data-chat="bug">
+                    <div class="chat-avatar" style="background:#10b981;">B</div>
+                    <div class="chat-info">
+                        <div class="chat-name">Bug Report</div>
+                        <div class="chat-preview">Issue #42 sudah fixed...</div>
+                    </div>
+                    <div class="chat-time">5 hari</div>
+                </div>
+            </div>
+
+            <div class="sidebar-footer">
+                © 2026 READTalk · 5 percakapan
+            </div>
+        </aside>
+
+        <!-- ============================================================
+        MAIN CHAT
+        ============================================================ -->
+        <main class="main-chat" id="mainChat">
+            <!-- HEADER CHAT -->
+            <header class="chat-header">
+                <button class="btn-back" id="backBtn" title="Kembali ke daftar chat">←</button>
+
+                <div class="chat-avatar-small">L</div>
+
+                <div class="chat-title">
+                    <h3 id="chatTitle">Anna Laura AI</h3>
+                    <p>
+                        <span class="status-dot"></span>
+                        Online
+                    </p>
+                </div>
+
+                <button style="background:none;border:none;font-size:1.2rem;cursor:pointer;padding:4px 8px;border-radius:8px;color:#6b7280;" title="Menu">⋮</button>
+            </header>
+
+            <!-- MESSAGES -->
+            <div class="chat-messages" id="chatMessages">
+                <div class="message assistant">
+                    <div>
+                        Hello! please my nickname is Laura, a virtual assistant for you. How can I help you today? 🙂
+                    </div>
+                    <div class="msg-time" id="initialTimestamp"></div>
+                </div>
+            </div>
+
+            <!-- TYPING INDICATOR -->
+            <div class="typing-indicator" id="typingIndicator">
+                💬 Laura typing...
+            </div>
+
+            <!-- INPUT AREA -->
+            <div class="input-area">
+                <div class="input-wrapper">
+                    <button id="emoji-btn" title="Emoji">😊</button>
+                    <textarea id="user-input" rows="1" placeholder="Tulis pesan..." autofocus></textarea>
+                </div>
+                <button id="send-btn" title="Kirim">➤</button>
+
+                <div class="emoji-picker" id="emojiPicker">
+                    <div class="emoji-item">😀</div>
+                    <div class="emoji-item">😂</div>
+                    <div class="emoji-item">🤣</div>
+                    <div class="emoji-item">🙂</div>
+                    <div class="emoji-item">😉</div>
+                    <div class="emoji-item">😍</div>
+                    <div class="emoji-item">🥰</div>
+                    <div class="emoji-item">😘</div>
+                    <div class="emoji-item">🤔</div>
+                    <div class="emoji-item">😎</div>
+                    <div class="emoji-item">🥳</div>
+                    <div class="emoji-item">😭</div>
+                    <div class="emoji-item">😡</div>
+                    <div class="emoji-item">🔥</div>
+                    <div class="emoji-item">💯</div>
+                    <div class="emoji-item">✨</div>
+                    <div class="emoji-item">❤️</div>
+                    <div class="emoji-item">👍</div>
+                    <div class="emoji-item">👏</div>
+                    <div class="emoji-item">🙌</div>
+                    <div class="emoji-item">🤝</div>
+                    <div class="emoji-item">🎉</div>
+                    <div class="emoji-item">⭐</div>
+                    <div class="emoji-item">🌟</div>
+                    <div class="emoji-item">💪</div>
+                    <div class="emoji-item">🎯</div>
+                    <div class="emoji-item">🏆</div>
+                    <div class="emoji-item">🌈</div>
+                    <div class="emoji-item">⚡</div>
+                    <div class="emoji-item">🔥</div>
+                    <div class="emoji-item">💎</div>
+                    <div class="emoji-item">🚀</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ============================================================
+    TOMBOL + (Floating Action Button) - KHUSUS HP
+    ============================================================ -->
+    <button class="fab-new-chat" id="fabNewChat" title="Chat Baru">+</button>
+
+    <!-- ============================================================
+    JAVASCRIPT
+    ============================================================ -->
+    <script>
+        (function() {
+            'use strict';
+
+            // ==================== DOM ====================
+            const sidebar = document.getElementById('sidebar');
+            const mainChat = document.getElementById('mainChat');
+            const backBtn = document.getElementById('backBtn');
+            const fabNewChat = document.getElementById('fabNewChat');
+            const newChatBtn = document.getElementById('newChatBtn');
+            const chatMessages = document.getElementById('chatMessages');
+            const userInput = document.getElementById('user-input');
+            const sendBtn = document.getElementById('send-btn');
+            const typingIndicator = document.getElementById('typingIndicator');
+            const emojiBtn = document.getElementById('emoji-btn');
+            const emojiPicker = document.getElementById('emojiPicker');
+            const chatList = document.getElementById('chatList');
+            const chatTitle = document.getElementById('chatTitle');
+
+            let isMobile = window.innerWidth <= 768;
+
+            // ==================== FUNGSI NAVIGASI HP ====================
+            function showChat() {
+                if (!isMobile) return;
+                sidebar.classList.add('hidden');
+                mainChat.classList.remove('closed');
+                mainChat.classList.add('open');
+            }
+
+            function showSidebar() {
+                if (!isMobile) return;
+                sidebar.classList.remove('hidden');
+                mainChat.classList.remove('open');
+                mainChat.classList.add('closed');
+            }
+
+            function toggleChat() {
+                if (!isMobile) return;
+                if (mainChat.classList.contains('open')) {
+                    showSidebar();
+                } else {
+                    showChat();
+                }
+            }
+
+            // ==================== TOMBOL KEMBALI ====================
+            backBtn.addEventListener('click', showSidebar);
+
+            // ==================== TOMBOL + (FAB) ====================
+            fabNewChat.addEventListener('click', function() {
+                if (confirm('Buat percakapan baru?')) {
+                    resetChat();
+                    if (isMobile) {
+                        showChat();
+                    }
+                }
+            });
+
+            // ==================== TOMBOL + DI SIDEBAR ====================
+            newChatBtn.addEventListener('click', function() {
+                if (confirm('Buat percakapan baru?')) {
+                    resetChat();
+                    if (isMobile) {
+                        showChat();
+                    }
+                }
+            });
+
+            // ==================== RESET CHAT ====================
+            function resetChat() {
+                const messages = chatMessages.querySelectorAll('.message');
+                messages.forEach(function(msg, index) {
+                    if (index > 0) msg.remove();
+                });
+                setInitialTimestamp();
+                typingIndicator.classList.remove('visible');
+                chatTitle.textContent = 'Anna Laura AI';
+                document.querySelectorAll('.chat-item').forEach(function(el) {
+                    el.classList.remove('active');
+                });
+                document.querySelector('.chat-item[data-chat="laura"]').classList.add('active');
+            }
+
+            // ==================== TIMESTAMP AWAL ====================
+            function setInitialTimestamp() {
+                const now = new Date();
+                const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const el = document.getElementById('initialTimestamp');
+                if (el) el.textContent = time;
+            }
+            setInitialTimestamp();
+
+            // ==================== AUTO-RESIZE TEXTAREA ====================
+            userInput.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+            });
+
+            // ==================== KIRIM PESAN ====================
+            userInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            sendBtn.addEventListener('click', sendMessage);
+
+            let isProcessing = false;
+
+            function sendMessage() {
+                const text = userInput.value.trim();
+                if (text === '' || isProcessing) return;
+
+                isProcessing = true;
+                sendBtn.disabled = true;
+
+                addMessage('user', text);
+
+                userInput.value = '';
+                userInput.style.height = 'auto';
+                userInput.focus();
+
+                typingIndicator.classList.add('visible');
+
+                setTimeout(function() {
+                    typingIndicator.classList.remove('visible');
+
+                    const replies = [
+                        'Menarik! Bisa ceritakan lebih lanjut? 😊',
+                        'Saya mengerti. Ada yang bisa saya bantu?',
+                        'Terima kasih informasinya!',
+                        'Baik, saya catat. Lanjutkan...',
+                        'Hmm, saya pikir itu ide bagus! 💡'
+                    ];
+                    const randomReply = replies[Math.floor(Math.random() * replies.length)];
+                    addMessage('assistant', randomReply);
+
+                    isProcessing = false;
+                    sendBtn.disabled = false;
+                }, 1200 + Math.random() * 800);
+            }
+
+            // ==================== TAMBAH PESAN ====================
+            function addMessage(role, content) {
+                const div = document.createElement('div');
+                div.className = 'message ' + role;
+
+                const now = new Date();
+                const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                div.innerHTML = `
+                    <div>${escapeHtml(content)}</div>
+                    <div class="msg-time">${time}</div>
+                `;
+
+                chatMessages.appendChild(div);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+
+            // ==================== ESCAPE HTML ====================
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            // ==================== EMOJI PICKER ====================
+            emojiBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                emojiPicker.classList.toggle('show');
+            });
+
+            document.addEventListener('click', function(e) {
+                if (!emojiPicker.contains(e.target) && e.target !== emojiBtn) {
+                    emojiPicker.classList.remove('show');
+                }
+            });
+
+            document.querySelectorAll('.emoji-item').forEach(function(item) {
+                item.addEventListener('click', function() {
+                    const emoji = this.textContent;
+                    const cursorPos = userInput.selectionStart;
+                    const before = userInput.value.substring(0, cursorPos);
+                    const after = userInput.value.substring(cursorPos);
+                    userInput.value = before + emoji + after;
+                    userInput.focus();
+                    userInput.setSelectionRange(cursorPos + emoji.length, cursorPos + emoji.length);
+                    userInput.dispatchEvent(new Event('input'));
+                    emojiPicker.classList.remove('show');
+                });
+            });
+
+            // ==================== CHAT ITEM CLICK ====================
+            chatList.addEventListener('click', function(e) {
+                const item = e.target.closest('.chat-item');
+                if (!item) return;
+
+                document.querySelectorAll('.chat-item').forEach(function(el) {
+                    el.classList.remove('active');
+                });
+                item.classList.add('active');
+
+                const name = item.querySelector('.chat-name');
+                if (name) {
+                    chatTitle.textContent = name.textContent;
+                }
+
+                resetChat();
+                chatTitle.textContent =
